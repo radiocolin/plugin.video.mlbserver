@@ -555,19 +555,20 @@ class Account:
 		xml_output += self.get_channels_xml(url_base)
 		games = json.loads(self.get_games('guide'))['games']
 		for game in games:
-			start = self.utils.dateToString(self.utils.stringToDate(game['start'], "%Y-%m-%dT%H:%M:%S%z", True), "%Y%m%d%H%M%S %z")
-			stop = self.utils.dateToString(self.utils.add_time(self.utils.stringToDate(game['start'], "%Y-%m-%dT%H:%M:%S%z"), hours=3), "%Y%m%d%H%M%S %z")
-			original_air_date = self.utils.dateToString(self.utils.stringToDate(game['start'], "%Y-%m-%dT%H:%M:%S%z", True), "%Y-%m-%d %H:%M:%S")
-			away_team_name = self.utils.get_cached_team_name(game['teamIds'][0])[0][0]
-			home_team_name = self.utils.get_cached_team_name(game['teamIds'][1])[0][0]
-			for teamId in game['teamIds']:
-				title = 'MLB Baseball'
-				subtitle = away_team_name + ' at ' + home_team_name
-				description = ''
-				if len(game['subtitle']) > 0:
-					description = game['subtitle'] + ', '
-				description += self.utils.get_cached_team_nickname(teamId)[0][0] + ' broadcast (if available)'
-				xml_output += '''
+			try:
+				start = self.utils.dateToString(self.utils.stringToDate(game['start'], "%Y-%m-%dT%H:%M:%S%z", True), "%Y%m%d%H%M%S %z")
+				stop = self.utils.dateToString(self.utils.add_time(self.utils.stringToDate(game['start'], "%Y-%m-%dT%H:%M:%S%z"), hours=3), "%Y%m%d%H%M%S %z")
+				original_air_date = self.utils.dateToString(self.utils.stringToDate(game['start'], "%Y-%m-%dT%H:%M:%S%z", True), "%Y-%m-%d %H:%M:%S")
+				away_team_name = self.utils.get_cached_team_name(game['teamIds'][0])[0][0]
+				home_team_name = self.utils.get_cached_team_name(game['teamIds'][1])[0][0]
+				for teamId in game['teamIds']:
+					title = 'MLB Baseball'
+					subtitle = away_team_name + ' at ' + home_team_name
+					description = ''
+					if len(game['subtitle']) > 0:
+						description = game['subtitle'] + ', '
+					description += self.utils.get_cached_team_nickname(teamId)[0][0] + ' broadcast (if available)'
+					xml_output += '''
     <programme channel="{channel_id}" start="{start}" stop="{stop}">
       <title lang="en">{title}</title>
       <sub-title lang="en">{subtitle}</sub-title>
@@ -585,6 +586,8 @@ class Account:
       <team lang="en">{away_team_name}</team>
       <team lang="en">{home_team_name}</team>
     </programme>'''.format(channel_id=self.get_channel_id(teamId), start=start, stop=stop, title=title, subtitle=subtitle, description=description, icon=game['thumb'], teamId=teamId, original_air_date=original_air_date, gamePk=game['gamePk'], away_team_name=away_team_name, home_team_name=home_team_name)
+			except:
+				pass
 
 		xml_output += '''
   </tv>'''
