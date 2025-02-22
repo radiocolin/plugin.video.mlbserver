@@ -4,7 +4,7 @@
 
 # Notes
 
-This software is in a PRE-ALPHA state. Intended as an eventual replacement for [mlbserver](https://github.com/tonywagner/mlbserver)
+This software is in a PRE-ALPHA state. For more features, see [mlbserver](https://github.com/tonywagner/mlbserver)
 
 # Current Features
 

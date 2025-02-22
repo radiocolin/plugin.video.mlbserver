@@ -10,14 +10,14 @@ import sys
 
 class Account:
 	session = None
-	user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+	user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
 	common_headers = {
 	  'cache-control': 'no-cache', 
 	  'origin': 'https://www.mlb.com', 
 	  'pragma': 'no-cache',
 	  'priority': 'u=1, i', 
 	  'referer': 'https://www.mlb.com/', 
-	  'sec-ch-ua': '"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="8"', 
+	  'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"', 
 	  'sec-ch-ua-mobile': '?0', 
 	  'sec-ch-ua-platform': '"macOS"', 
 	  'sec-fetch-dest': 'empty', 
@@ -48,7 +48,7 @@ class Account:
 			self.get_token()
 			self.get_okta_id()
 		
-	def logout(self):
+	def reset(self):
 		self.utils.save_cookies('')
 		self.session = requests.session()
 		self.utils.reset_cache_db()
@@ -57,6 +57,9 @@ class Account:
 		self.deviceId = None
 		self.sessionId = None
 		self.entitlements = []
+		
+	def logout(self):
+		self.reset()
 		self.utils.set_setting('mlb_account_email', '')
 		self.utils.set_setting('mlb_account_password', '')
 
@@ -153,14 +156,14 @@ class Account:
 			  'connection': 'keep-alive',
 			  'content-type': 'application/json', 
 			  'x-client-name': 'WEB', 
-			  'x-client-version': '7.8.1'
+			  'x-client-version': '7.10.2'
 			}
 			data = json.dumps({
 			  "operationName": "initSession",
 			  "query": "mutation initSession($device: InitSessionInput!, $clientType: ClientType!, $experience: ExperienceTypeInput) {\n    initSession(device: $device, clientType: $clientType, experience: $experience) {\n        deviceId\n        sessionId\n        entitlements {\n            code\n        }\n        location {\n            countryCode\n            regionName\n            zipCode\n            latitude\n            longitude\n        }\n        clientExperience\n        features\n    }\n  }",
 			  "variables": {
 				"device": {
-				  "appVersion": "7.8.1",
+				  "appVersion": "7.10.2",
 				  "deviceFamily": "desktop",
 				  "knownDeviceId": "",
 				  "languagePreference": "ENGLISH",
@@ -187,7 +190,7 @@ class Account:
 			self.utils.log(r.text)
 			sys.exit(0)
 			
-	def get_playback(self, mediaId):
+	def get_playback(self, mediaId, reattempt=False):
 		try:
 			url, token = self.utils.get_cached_stream(mediaId)[0]
 		except:
@@ -203,7 +206,7 @@ class Account:
 				  'connection': 'keep-alive',
 				  'content-type': 'application/json', 
 				  'x-client-name': 'WEB', 
-				  'x-client-version': '7.8.1'
+				  'x-client-version': '7.10.2'
 				}
 				data = json.dumps({
 				  "operationName": "initPlaybackSession",
@@ -220,10 +223,14 @@ class Account:
 				})
 				r = self.utils.http_post(url, {**self.common_headers, **headers}, data, self.session)
 				response_json = r.json()
-				url = re.sub(r"[\/]([A-Za-z0-9_]+)[\/]", r"/", response_json['data']['initPlaybackSession']['playback']['url'], flags=re.M)
-				token = response_json['data']['initPlaybackSession']['playback']['token']
-				expiration = response_json['data']['initPlaybackSession']['playback']['expiration']
-				self.utils.save_cached_stream(mediaId, url, token, expiration)
+				if response_json['data']['initPlaybackSession'] is not None:
+					url = re.sub(r"[\/]([A-Za-z0-9_]+)[\/]", r"/", response_json['data']['initPlaybackSession']['playback']['url'], flags=re.M)
+					token = response_json['data']['initPlaybackSession']['playback']['token']
+					expiration = response_json['data']['initPlaybackSession']['playback']['expiration']
+					self.utils.save_cached_stream(mediaId, url, token, expiration)
+				elif reattempt is False:
+					self.reset()
+					url, token = self.get_playback(mediaId, True)
 			except Exception as e:
 				self.utils.log('failed to get playback ' + str(e))
 				self.utils.log(r.text)
@@ -256,8 +263,10 @@ class Account:
 		if 'resolution' in parsed_qs:
 			resolution = parsed_qs['resolution'][0]
 			if resolution == 'best':
-				resolution = '720p60'
-			if resolution.startswith('720p'):
+				resolution = '1080p60'
+			if resolution == '1080p60':
+				resolution = '1080,FRAME-RATE=59'
+			elif resolution.startswith('720p'):
 				if resolution.endswith('p60'):
 					resolution = '720,FRAME-RATE=59'
 				else:
@@ -299,6 +308,9 @@ class Account:
 				
 				# if resolution is specified, remove non-matching resolutions from manifest
 				if resolution is not None:
+					# if specified resolution is not present, default to 720p60
+					if resolution not in content:
+						resolution = '720,FRAME-RATE=59'
 					content = re.sub(r"^((?:#EXT-X-STREAM-INF:BANDWIDTH=)[\d]+(?:,AVERAGE-BANDWIDTH=)[\d]+(?:,CODECS=\"avc1.)[a-z0-9]+(?:,mp4a.40.2\",RESOLUTION=)[\d]+[x](?!" + resolution + r")[\S]+[\n][\S]+[\n])", r"", content, flags=re.M)
 				
 				# remove subtitles and extraneous lines for Kodi Inputstream Adaptive compatibility
