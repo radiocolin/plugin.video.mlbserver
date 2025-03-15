@@ -224,7 +224,7 @@ class Account:
 				r = self.utils.http_post(url, {**self.common_headers, **headers}, data, self.session)
 				response_json = r.json()
 				if response_json['data']['initPlaybackSession'] is not None:
-					url = re.sub(r"[\/]([A-Za-z0-9_]+)[\/]", r"/", response_json['data']['initPlaybackSession']['playback']['url'], flags=re.M)
+					url = re.sub(r"[\/]([A-Za-z0-9_]+)[\/]", r"/", response_json['data']['initPlaybackSession']['playback']['url'], count=1, flags=re.M)
 					token = response_json['data']['initPlaybackSession']['playback']['token']
 					expiration = response_json['data']['initPlaybackSession']['playback']['expiration']
 					self.utils.save_cached_stream(mediaId, url, token, expiration)
@@ -604,3 +604,4 @@ class Account:
 		xml_output += '''
   </tv>'''
 		return xml_output.replace('&', '&amp;')
+
