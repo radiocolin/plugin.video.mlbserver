@@ -4,7 +4,10 @@ build:
   commands:
     - pip install requests
 run:
-  command: ["python3", "-u", "service.py"]
+  command:
+    - python3
+    - -u
+    - service.py
   network:
     port: 5714
   env:
