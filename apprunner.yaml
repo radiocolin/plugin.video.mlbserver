@@ -6,10 +6,6 @@ build:
       - pip install --upgrade pip
     build:
       - pip install requests
-  artifacts:
-    - source: .
-      destination: /plugin.video.mlbserver
-
 run:
   command: python3 -u service.py
   network:
@@ -17,7 +13,6 @@ run:
   env:
     - name: TZ
       value: America/New_York
-
   volumes:
     - path: /plugin.video.mlb/data
       source: data
