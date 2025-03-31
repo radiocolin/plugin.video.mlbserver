@@ -2,18 +2,23 @@ version: 1.0
 runtime: python3
 build:
   commands:
-    - pip install requests
+    pre-build:
+      - pip install --upgrade pip
+    build:
+      - pip install requests
+  artifacts:
+    - source: .
+      destination: /plugin.video.mlbserver
+
 run:
-  command:
-    - python3
-    - -u
-    - service.py
+  command: python3 -u service.py
   network:
     port: 5714
   env:
     - name: TZ
       value: America/New_York
-  filesystem:
-    mount_points:
-      - path: /plugin.video.mlb/data
-        source: ./data
+
+  volumes:
+    - path: /plugin.video.mlb/data
+      source: data
+      read_only: false
